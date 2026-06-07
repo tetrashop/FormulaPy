@@ -1,8 +1,13 @@
 {
+  "functions": {
+    "api/index.py": {
+      "runtime": "@vercel/python@3.12.1"
+    }
+  },
   "routes": [
     {
       "src": "/api/(.*)",
-      "dest": "/main.py"
+      "dest": "/api/index.py"
     },
     {
       "src": "/static/(.*)",
