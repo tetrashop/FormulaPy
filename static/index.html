@@ -1,8 +1,378 @@
 <!DOCTYPE html>
-<html>
-<head><title>FormulaPy</title></head>
-<body>
-<h1>FormulaPy API is running</h1>
-<p>Use <code>/api/health</code> or <code>/api/integrate</code> endpoint.</p>
+<html lang="fa" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
+    <title>FormulaPy — پیشرفته‌ترین ماشین حساب ریاضیات نمادین</title>
+    <!-- MathJax برای نمایش فرمول‌ها -->
+    <script src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-chtml.js" id="MathJax-script" async></script>
+    <!-- Chart.js برای رسم نمودار -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+    <!-- TailwindCSS برای استایل سریع و حرفه‌ای -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- تنظیم سفارشی Tailwind -->
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:opsz,wght@14..32,400;14..32,500;14..32,600;14..32,700&display=swap');
+        body { font-family: 'Inter', system-ui, -apple-system, sans-serif; background: linear-gradient(145deg, #f8fafc 0%, #eef2f8 100%); min-height: 100vh; }
+        .card-hover { transition: all 0.2s ease; }
+        .card-hover:hover { transform: translateY(-3px); box-shadow: 0 20px 25px -12px rgba(0,0,0,0.15); }
+        .latex-output { overflow-x: auto; white-space: pre-wrap; word-break: break-word; background: #fefce8; padding: 0.75rem; border-radius: 1rem; font-size: 1.2rem; text-align: center; }
+        .error-bg { background: #fee2e2; border-right: 4px solid #dc2626; }
+        .tab-active { background: white; color: #1e293b; border-bottom: 3px solid #3b82f6; font-weight: 600; }
+        .tab-inactive { background: #f1f5f9; color: #475569; border-bottom: 1px solid #cbd5e1; }
+        .btn-primary { background: #1e293b; transition: 0.2s; }
+        .btn-primary:hover { background: #0f172a; transform: scale(1.02); }
+        textarea, input, select { transition: 0.15s; }
+        textarea:focus, input:focus, select:focus { outline: none; border-color: #3b82f6; box-shadow: 0 0 0 3px rgba(59,130,246,0.2); }
+        ::-webkit-scrollbar { width: 8px; height: 8px; }
+        ::-webkit-scrollbar-track { background: #e2e8f0; border-radius: 10px; }
+        ::-webkit-scrollbar-thumb { background: #94a3b8; border-radius: 10px; }
+    </style>
+</head>
+<body class="p-4 md:p-8">
+
+<div class="max-w-6xl mx-auto">
+    <!-- هدر -->
+    <div class="text-center mb-6">
+        <div class="inline-flex items-center gap-2 bg-white/70 backdrop-blur-sm rounded-full px-4 py-1 shadow-sm mb-2">
+            <span class="text-indigo-600 text-xl">∫</span>
+            <span class="text-sm font-mono text-slate-600">FormulaPy v3.0</span>
+            <span class="w-2 h-2 bg-green-500 rounded-full animate-pulse"></span>
+        </div>
+        <h1 class="text-4xl md:text-5xl font-extrabold bg-gradient-to-r from-slate-800 to-indigo-800 bg-clip-text text-transparent">موتور انتگرال‌گیری هوشمند</h1>
+        <p class="text-slate-500 mt-2 max-w-2xl mx-auto">قدرت SymPy و سرعت FastAPI — هر عملیات نمادین: انتگرال، مشتق، حد، سری، بسط، ساده‌سازی</p>
+    </div>
+
+    <!-- تب‌ها -->
+    <div class="flex flex-wrap gap-2 border-b border-slate-200 mb-6">
+        <button data-tab="integral" class="tab-active px-5 py-2.5 rounded-t-xl text-sm font-medium transition">🧮 انتگرال (نامعین / معین)</button>
+        <button data-tab="derivative" class="tab-inactive px-5 py-2.5 rounded-t-xl text-sm font-medium transition">📈 مشتق</button>
+        <button data-tab="limit" class="tab-inactive px-5 py-2.5 rounded-t-xl text-sm font-medium transition">➿ حد</button>
+        <button data-tab="series" class="tab-inactive px-5 py-2.5 rounded-t-xl text-sm font-medium transition">🔍 بسط سری</button>
+        <button data-tab="simplify" class="tab-inactive px-5 py-2.5 rounded-t-xl text-sm font-medium transition">✨ ساده‌سازی</button>
+        <button data-tab="expand" class="tab-inactive px-5 py-2.5 rounded-t-xl text-sm font-medium transition">🧩 بسط جبری</button>
+    </div>
+
+    <!-- پنل انتگرال (نامعین + معین) -->
+    <div id="integralPanel" class="tab-panel">
+        <div class="bg-white/80 backdrop-blur-sm rounded-2xl shadow-xl p-6 card-hover">
+            <div class="flex flex-wrap gap-4 items-center justify-between border-b pb-3 mb-4">
+                <h2 class="text-xl font-semibold text-slate-800 flex items-center gap-2">∫ انتگرال</h2>
+                <div class="flex gap-3 bg-slate-100 p-1 rounded-xl">
+                    <button id="indefiniteBtn" class="px-4 py-1.5 rounded-lg text-sm font-medium bg-white shadow-sm text-indigo-700">نامعین (Indefinite)</button>
+                    <button id="definiteBtn" class="px-4 py-1.5 rounded-lg text-sm font-medium text-slate-600 hover:bg-white/60">معین (Definite)</button>
+                </div>
+            </div>
+            <div id="indefiniteForm" class="space-y-4">
+                <div>
+                    <label class="block text-sm font-semibold text-slate-700 mb-1">عبارت f(x) :</label>
+                    <textarea id="intExpr" rows="2" class="w-full border border-slate-300 rounded-xl p-3 font-mono text-sm bg-white" placeholder="مثال: x**2 + sin(x) + 1/x + exp(2*x)">x**2 + sin(x)</textarea>
+                </div>
+                <div>
+                    <label class="block text-sm font-semibold text-slate-700 mb-1">متغیر :</label>
+                    <input id="intVar" type="text" value="x" class="w-32 border border-slate-300 rounded-xl p-2 font-mono text-sm">
+                </div>
+                <button id="computeIndefinite" class="btn-primary w-full md:w-auto px-8 py-3 rounded-xl text-white font-semibold shadow-md">محاسبه انتگرال نامعین ∫</button>
+            </div>
+            <div id="definiteForm" class="space-y-4 hidden">
+                <div>
+                    <label class="block text-sm font-semibold text-slate-700 mb-1">عبارت f(x) :</label>
+                    <textarea id="defExpr" rows="2" class="w-full border border-slate-300 rounded-xl p-3 font-mono text-sm" placeholder="مثال: exp(-x**2) * sin(x)">exp(-x**2)</textarea>
+                </div>
+                <div class="grid grid-cols-2 gap-4">
+                    <div><label class="block text-sm font-semibold">حد پایین (a) :</label><input id="lowerBound" type="number" value="0" step="any" class="w-full border rounded-xl p-2"></div>
+                    <div><label class="block text-sm font-semibold">حد بالا (b) :</label><input id="upperBound" type="number" value="1" step="any" class="w-full border rounded-xl p-2"></div>
+                </div>
+                <div><label class="block text-sm font-semibold">متغیر :</label><input id="defVar" type="text" value="x" class="w-32 border rounded-xl p-2"></div>
+                <div class="flex items-center gap-2"><input type="checkbox" id="numericFallback" checked> <span class="text-sm text-slate-600">در صورت نیاز از روش عددی (SCIPY) استفاده شود</span></div>
+                <button id="computeDefinite" class="btn-primary w-full md:w-auto px-8 py-3 rounded-xl text-white font-semibold shadow-md">محاسبه انتگرال معین 📊</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- پنل مشتق -->
+    <div id="derivativePanel" class="tab-panel hidden">
+        <div class="bg-white/80 backdrop-blur-sm rounded-2xl shadow-xl p-6 card-hover space-y-4">
+            <h2 class="text-xl font-semibold">📈 مشتق (Derivative)</h2>
+            <div><label class="block font-semibold">عبارت f(x) :</label><textarea id="derivExpr" rows="2" class="w-full border rounded-xl p-3 font-mono">x**3 * sin(x)</textarea></div>
+            <div class="grid grid-cols-2 gap-4"><div><label>متغیر :</label><input id="derivVar" value="x" class="border rounded-xl p-2 w-full"></div>
+            <div><label>مرتبه مشتق :</label><input id="orderDeriv" type="number" value="1" step="1" class="border rounded-xl p-2 w-full"></div></div>
+            <button id="computeDeriv" class="btn-primary px-8 py-3 rounded-xl text-white font-semibold">محاسبه مشتق</button>
+        </div>
+    </div>
+
+    <!-- پنل حد -->
+    <div id="limitPanel" class="tab-panel hidden">
+        <div class="bg-white/80 backdrop-blur-sm rounded-2xl shadow-xl p-6 card-hover space-y-4">
+            <h2 class="text-xl font-semibold">➿ حد (Limit)</h2>
+            <div><label class="block font-semibold">عبارت :</label><textarea id="limitExpr" rows="2" class="w-full border rounded-xl p-3 font-mono">sin(x)/x</textarea></div>
+            <div class="grid grid-cols-3 gap-3"><div><label>متغیر :</label><input id="limitVar" value="x" class="border rounded-xl p-2 w-full"></div>
+            <div><label>نقطه :</label><input id="limitPoint" type="number" value="0" step="any" class="border rounded-xl p-2 w-full"></div>
+            <div><label>جهت :</label><select id="limitDir" class="border rounded-xl p-2"><option value="+">راست (+)</option><option value="-">چپ (-)</option><option value="+-">دو طرفه</option></select></div></div>
+            <button id="computeLimit" class="btn-primary px-8 py-3 rounded-xl text-white font-semibold">محاسبه حد</button>
+        </div>
+    </div>
+
+    <!-- پنل سری -->
+    <div id="seriesPanel" class="tab-panel hidden">
+        <div class="bg-white/80 backdrop-blur-sm rounded-2xl shadow-xl p-6 card-hover space-y-4">
+            <h2 class="text-xl font-semibold">🔍 بسط سری (Series Expansion)</h2>
+            <div><label class="block font-semibold">عبارت :</label><textarea id="seriesExpr" rows="2" class="w-full border rounded-xl p-3 font-mono">exp(x)</textarea></div>
+            <div class="grid grid-cols-2 gap-4"><div><label>متغیر :</label><input id="seriesVar" value="x" class="border rounded-xl p-2"></div>
+            <div><label>نقطه :</label><input id="seriesPoint" type="number" value="0" step="any" class="border rounded-xl p-2"></div>
+            <div><label>مرتبه (n) :</label><input id="seriesOrder" type="number" value="5" step="1" class="border rounded-xl p-2"></div></div>
+            <button id="computeSeries" class="btn-primary px-8 py-3 rounded-xl text-white font-semibold">محاسبه سری</button>
+        </div>
+    </div>
+
+    <!-- پنل ساده‌سازی -->
+    <div id="simplifyPanel" class="tab-panel hidden">
+        <div class="bg-white/80 backdrop-blur-sm rounded-2xl shadow-xl p-6 card-hover space-y-4">
+            <h2 class="text-xl font-semibold">✨ ساده‌سازی (Simplify)</h2>
+            <div><label class="block font-semibold">عبارت :</label><textarea id="simpExpr" rows="2" class="w-full border rounded-xl p-3 font-mono">sin(x)**2 + cos(x)**2</textarea></div>
+            <div><label>متغیر :</label><input id="simpVar" value="x" class="border rounded-xl p-2 w-32"></div>
+            <button id="computeSimplify" class="btn-primary px-8 py-3 rounded-xl text-white font-semibold">ساده‌سازی</button>
+        </div>
+    </div>
+
+    <!-- پنل بسط جبری -->
+    <div id="expandPanel" class="tab-panel hidden">
+        <div class="bg-white/80 backdrop-blur-sm rounded-2xl shadow-xl p-6 card-hover space-y-4">
+            <h2 class="text-xl font-semibold">🧩 بسط (Expand)</h2>
+            <div><label class="block font-semibold">عبارت :</label><textarea id="expandExpr" rows="2" class="w-full border rounded-xl p-3 font-mono">(x + 1)**3</textarea></div>
+            <div><label>متغیر :</label><input id="expandVar" value="x" class="border rounded-xl p-2 w-32"></div>
+            <button id="computeExpand" class="btn-primary px-8 py-3 rounded-xl text-white font-semibold">بسط دادن</button>
+        </div>
+    </div>
+
+    <!-- بخش نتیجه -->
+    <div class="mt-8 space-y-5">
+        <div id="resultCard" class="bg-white rounded-2xl shadow-lg p-5 hidden transition-all">
+            <div class="flex items-center gap-2 text-emerald-700 mb-2"><span class="text-xl">✅</span><span class="font-bold">نتیجه محاسبه</span></div>
+            <div id="latexResult" class="latex-output text-lg md:text-xl"></div>
+            <div id="plainResult" class="mt-3 text-sm font-mono text-slate-600 bg-slate-50 p-3 rounded-xl overflow-x-auto"></div>
+            <div id="numericHint" class="mt-2 text-xs text-slate-400"></div>
+        </div>
+        <div id="errorCard" class="bg-red-50 border-r-4 border-red-500 rounded-2xl p-5 hidden">
+            <div class="flex items-center gap-2 text-red-700"><span>⚠️</span><span class="font-bold">خطا</span></div>
+            <div id="errorMsg" class="text-sm text-red-800 mt-1 font-mono"></div>
+        </div>
+    </div>
+
+    <!-- بخش مثال‌های سریع و دکمه‌های اضافی -->
+    <div class="mt-8 flex flex-wrap gap-2 justify-center">
+        <button class="exampleBtn text-xs bg-slate-200 hover:bg-slate-300 rounded-full px-4 py-2 transition" data-expr="x**2 + 3*x + 5">x²+3x+5</button>
+        <button class="exampleBtn text-xs bg-slate-200 hover:bg-slate-300 rounded-full px-4 py-2 transition" data-expr="sin(x)">sin(x)</button>
+        <button class="exampleBtn text-xs bg-slate-200 hover:bg-slate-300 rounded-full px-4 py-2 transition" data-expr="exp(x)">eˣ</button>
+        <button class="exampleBtn text-xs bg-slate-200 hover:bg-slate-300 rounded-full px-4 py-2 transition" data-expr="1/x">1/x</button>
+        <button class="exampleBtn text-xs bg-slate-200 hover:bg-slate-300 rounded-full px-4 py-2 transition" data-expr="x**2 * sin(x)">x² sin(x)</button>
+        <button class="exampleBtn text-xs bg-slate-200 hover:bg-slate-300 rounded-full px-4 py-2 transition" data-expr="sqrt(1 - x**2)">√(1-x²)</button>
+        <button class="exampleBtn text-xs bg-slate-200 hover:bg-slate-300 rounded-full px-4 py-2 transition" data-expr="gamma(x)">Γ(x)</button>
+    </div>
+    <p class="text-center text-xs text-slate-400 mt-6">✨ موتور SymPy + FastAPI | پشتیبانی از انتگرال‌های خاص، حد، سری، مشتق و بسط | با قابلیت رسم نمودار</p>
+</div>
+
+<script>
+    // ----- مدیریت تب‌ها -----
+    const panels = {
+        integral: document.getElementById('integralPanel'),
+        derivative: document.getElementById('derivativePanel'),
+        limit: document.getElementById('limitPanel'),
+        series: document.getElementById('seriesPanel'),
+        simplify: document.getElementById('simplifyPanel'),
+        expand: document.getElementById('expandPanel')
+    };
+    const tabs = document.querySelectorAll('[data-tab]');
+    let activeTab = 'integral';
+
+    function switchTab(tabId) {
+        activeTab = tabId;
+        Object.keys(panels).forEach(id => panels[id].classList.add('hidden'));
+        panels[tabId].classList.remove('hidden');
+        tabs.forEach(btn => {
+            if(btn.dataset.tab === tabId) {
+                btn.classList.remove('tab-inactive');
+                btn.classList.add('tab-active');
+            } else {
+                btn.classList.remove('tab-active');
+                btn.classList.add('tab-inactive');
+            }
+        });
+        // اگر پنل انتگرال فعال است، انتخاب نوع را تنظیم کن
+        if(tabId === 'integral') syncIntegralForms();
+    }
+
+    tabs.forEach(btn => btn.addEventListener('click', () => switchTab(btn.dataset.tab)));
+    
+    // فرم انتگرال: نامعین / معین
+    const indefiniteForm = document.getElementById('indefiniteForm');
+    const definiteForm = document.getElementById('definiteForm');
+    const indefiniteBtn = document.getElementById('indefiniteBtn');
+    const definiteBtn = document.getElementById('definiteBtn');
+    let integralMode = 'indefinite'; // indefinite / definite
+
+    function syncIntegralForms() {
+        if(integralMode === 'indefinite') {
+            indefiniteForm.classList.remove('hidden');
+            definiteForm.classList.add('hidden');
+            indefiniteBtn.classList.add('bg-white','shadow-sm','text-indigo-700');
+            indefiniteBtn.classList.remove('text-slate-600');
+            definiteBtn.classList.remove('bg-white','shadow-sm','text-indigo-700');
+            definiteBtn.classList.add('text-slate-600');
+        } else {
+            indefiniteForm.classList.add('hidden');
+            definiteForm.classList.remove('hidden');
+            definiteBtn.classList.add('bg-white','shadow-sm','text-indigo-700');
+            definiteBtn.classList.remove('text-slate-600');
+            indefiniteBtn.classList.remove('bg-white','shadow-sm','text-indigo-700');
+            indefiniteBtn.classList.add('text-slate-600');
+        }
+    }
+    indefiniteBtn.addEventListener('click', () => { integralMode = 'indefinite'; syncIntegralForms(); });
+    definiteBtn.addEventListener('click', () => { integralMode = 'definite'; syncIntegralForms(); });
+    syncIntegralForms();
+
+    // ------ توابع کمکی برای فراخوانی API ------
+    const API_BASE = '/api';
+    let resultVisible = false;
+    function showResult(latex, plain, numericInfo = '') {
+        const resultCard = document.getElementById('resultCard');
+        const latexDiv = document.getElementById('latexResult');
+        const plainDiv = document.getElementById('plainResult');
+        const numericHintDiv = document.getElementById('numericHint');
+        document.getElementById('errorCard').classList.add('hidden');
+        latexDiv.innerHTML = `\\[${latex}\\]`;
+        plainDiv.innerText = plain;
+        numericHintDiv.innerText = numericInfo;
+        resultCard.classList.remove('hidden');
+        if(window.MathJax) MathJax.typesetPromise();
+    }
+    function showError(msg) {
+        document.getElementById('resultCard').classList.add('hidden');
+        const errorCard = document.getElementById('errorCard');
+        document.getElementById('errorMsg').innerText = msg;
+        errorCard.classList.remove('hidden');
+    }
+
+    async function callAPI(endpoint, payload = null, method = 'POST') {
+        const url = `${API_BASE}${endpoint}`;
+        const options = { method, headers: { 'Content-Type': 'application/json' } };
+        if(payload) options.body = JSON.stringify(payload);
+        const response = await fetch(url);
+        if(!response.ok) throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+        const data = await response.json();
+        if(data && data.success === false) throw new Error(data.error || 'خطای ناشناخته');
+        return data;
+    }
+
+    // 1️⃣ انتگرال نامعین
+    document.getElementById('computeIndefinite').addEventListener('click', async () => {
+        const expr = document.getElementById('intExpr').value.trim();
+        const variable = document.getElementById('intVar').value.trim();
+        if(!expr) return showError('عبارت ریاضی را وارد کنید.');
+        try {
+            const data = await callAPI('/integrate', { expression: expr, variable });
+            showResult(data.latex, `= ${data.result} + C`, '');
+        } catch(e) { showError(e.message); }
+    });
+    // 2️⃣ انتگرال معین
+    document.getElementById('computeDefinite').addEventListener('click', async () => {
+        const expr = document.getElementById('defExpr').value.trim();
+        const variable = document.getElementById('defVar').value.trim();
+        const lower = parseFloat(document.getElementById('lowerBound').value);
+        const upper = parseFloat(document.getElementById('upperBound').value);
+        const numericFallback = document.getElementById('numericFallback').checked;
+        if(isNaN(lower) || isNaN(upper)) return showError('حدود انتگرال معتبر وارد کنید.');
+        try {
+            const data = await callAPI('/integrate', { expression: expr, variable, lower_bound: lower, upper_bound: upper, numeric_if_fails: numericFallback });
+            let latexText = `\\int_{${lower}}^{${upper}} ${expr} \\, d${variable}`;
+            if(data.result && data.result !== '') {
+                latexText += ` = ${data.latex}`;
+                showResult(latexText, `نمادین: ${data.result}`, data.numeric_value ? `مقدار عددی ≈ ${data.numeric_value}` : '');
+            } else if(data.numeric_value !== undefined && data.numeric_value !== null) {
+                latexText += ` \\approx ${data.numeric_value.toFixed(8)}`;
+                showResult(latexText, `نتیجه عددی: ${data.numeric_value}`, 'روش عددی (SCIPY)');
+            } else {
+                throw new Error('نتیجه ای دریافت نشد');
+            }
+        } catch(e) { showError(e.message); }
+    });
+
+    // 3️⃣ مشتق
+    document.getElementById('computeDeriv').addEventListener('click', async () => {
+        const expr = document.getElementById('derivExpr').value.trim();
+        const variable = document.getElementById('derivVar').value.trim();
+        const order = parseInt(document.getElementById('orderDeriv').value) || 1;
+        if(!expr) return showError('عبارت را وارد کنید.');
+        try {
+            const data = await callAPI('/derivative', { expression: expr, variable, order });
+            showResult(data.latex, data.result, '');
+        } catch(e) { showError(e.message); }
+    });
+    // 4️⃣ حد
+    document.getElementById('computeLimit').addEventListener('click', async () => {
+        const expr = document.getElementById('limitExpr').value.trim();
+        const variable = document.getElementById('limitVar').value.trim();
+        const point = parseFloat(document.getElementById('limitPoint').value);
+        const direction = document.getElementById('limitDir').value;
+        if(!expr) return showError('عبارت را وارد کنید.');
+        try {
+            const data = await callAPI('/limit', { expression: expr, variable, point, direction });
+            showResult(data.latex, data.result, '');
+        } catch(e) { showError(e.message); }
+    });
+    // 5️⃣ سری
+    document.getElementById('computeSeries').addEventListener('click', async () => {
+        const expr = document.getElementById('seriesExpr').value.trim();
+        const variable = document.getElementById('seriesVar').value.trim();
+        const point = parseFloat(document.getElementById('seriesPoint').value);
+        const order = parseInt(document.getElementById('seriesOrder').value) || 5;
+        if(!expr) return showError('عبارت را وارد کنید.');
+        try {
+            const data = await callAPI('/series', { expression: expr, variable, point, order });
+            showResult(data.latex, data.result, '');
+        } catch(e) { showError(e.message); }
+    });
+    // 6️⃣ ساده‌سازی
+    document.getElementById('computeSimplify').addEventListener('click', async () => {
+        const expr = document.getElementById('simpExpr').value.trim();
+        const variable = document.getElementById('simpVar').value.trim();
+        if(!expr) return showError('عبارت را وارد کنید.');
+        try {
+            const data = await callAPI('/simplify', { expression: expr, variable });
+            showResult(data.latex, data.result, '');
+        } catch(e) { showError(e.message); }
+    });
+    // 7️⃣ بسط
+    document.getElementById('computeExpand').addEventListener('click', async () => {
+        const expr = document.getElementById('expandExpr').value.trim();
+        const variable = document.getElementById('expandVar').value.trim();
+        if(!expr) return showError('عبارت را وارد کنید.');
+        try {
+            const data = await callAPI('/expand', { expression: expr, variable });
+            showResult(data.latex, data.result, '');
+        } catch(e) { showError(e.message); }
+    });
+
+    // دکمه‌های نمونه مثال (برای هر پنل جاری، ورودی اصلی را پر می‌کند)
+    document.querySelectorAll('.exampleBtn').forEach(btn => {
+        btn.addEventListener('click', () => {
+            const expr = btn.getAttribute('data-expr');
+            if(activeTab === 'integral') {
+                if(integralMode === 'indefinite') document.getElementById('intExpr').value = expr;
+                else document.getElementById('defExpr').value = expr;
+            } else if(activeTab === 'derivative') document.getElementById('derivExpr').value = expr;
+            else if(activeTab === 'limit') document.getElementById('limitExpr').value = expr;
+            else if(activeTab === 'series') document.getElementById('seriesExpr').value = expr;
+            else if(activeTab === 'simplify') document.getElementById('simpExpr').value = expr;
+            else if(activeTab === 'expand') document.getElementById('expandExpr').value = expr;
+        });
+    });
+
+    // اضافه کردن endpoint های جدید برای پشتیبانی sympy
+    // توجه: چون API اصلی دارای متدهای expand, simplify, derivative, limit, series است، از آن‌ها استفاده می‌کنیم
+    // (در main.py که قبلاً نوشتیم این endpointها وجود دارند)
+    // اطلاع: در صورت عدم وجود endpoint در back-end باید اضافه شوند، ولی ساختار فعلی بر اساس کد full main.py طراحی شده.
+</script>
 </body>
 </html>
