@@ -1,0 +1,197 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Symbolic Integral Calculator</title>
+    <style>
+        * {
+            box-sizing: border-box;
+            font-family: 'Segoe UI', 'Roboto', monospace;
+        }
+        body {
+            background: linear-gradient(145deg, #f5f7fc 0%, #e9eef5 100%);
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            margin: 0;
+            padding: 20px;
+        }
+        .card {
+            background: rgba(255,255,255,0.95);
+            backdrop-filter: blur(2px);
+            border-radius: 2rem;
+            box-shadow: 0 25px 45px -12px rgba(0,0,0,0.3), 0 0 0 1px rgba(0,0,0,0.05);
+            padding: 2rem;
+            width: 100%;
+            max-width: 750px;
+            transition: all 0.2s ease;
+        }
+        h1 {
+            font-size: 2rem;
+            font-weight: 600;
+            background: linear-gradient(135deg, #1e2b5c, #2a3f7e);
+            -webkit-background-clip: text;
+            background-clip: text;
+            color: transparent;
+            margin-top: 0;
+            margin-bottom: 0.5rem;
+        }
+        .sub {
+            color: #4a627a;
+            border-left: 3px solid #3b82f6;
+            padding-left: 1rem;
+            margin-bottom: 1.8rem;
+            font-weight: 400;
+        }
+        label {
+            font-weight: 600;
+            color: #1e293b;
+            display: block;
+            margin-bottom: 0.5rem;
+        }
+        input, textarea {
+            width: 100%;
+            padding: 0.8rem 1rem;
+            font-size: 1rem;
+            border: 1px solid #cbd5e1;
+            border-radius: 1.2rem;
+            background: white;
+            transition: 0.2s;
+            font-family: 'Fira Code', monospace;
+        }
+        input:focus, textarea:focus {
+            outline: none;
+            border-color: #3b82f6;
+            box-shadow: 0 0 0 3px rgba(59,130,246,0.2);
+        }
+        textarea {
+            resize: vertical;
+            min-height: 100px;
+        }
+        button {
+            background: #1e293b;
+            color: white;
+            border: none;
+            padding: 0.7rem 1.8rem;
+            font-size: 1rem;
+            border-radius: 2rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: 0.2s;
+            box-shadow: 0 2px 6px rgba(0,0,0,0.1);
+            margin-top: 1rem;
+        }
+        button:hover {
+            background: #0f172a;
+            transform: scale(1.01);
+        }
+        .result-area {
+            background: #f1f5f9;
+            padding: 1.2rem;
+            border-radius: 1.5rem;
+            margin-top: 1.8rem;
+            border: 1px solid #e2e8f0;
+        }
+        .result-label {
+            font-size: 0.85rem;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            font-weight: 700;
+            color: #475569;
+        }
+        .latex-output {
+            font-size: 1.4rem;
+            overflow-x: auto;
+            padding: 0.5rem 0;
+            font-family: 'Times New Roman', 'STIXGeneral', serif;
+        }
+        .error {
+            color: #b91c1c;
+            background: #fee2e2;
+            padding: 0.8rem;
+            border-radius: 1rem;
+        }
+        .footer {
+            margin-top: 2rem;
+            font-size: 0.75rem;
+            text-align: center;
+            color: #6c757d;
+        }
+    </style>
+    <script src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-chtml.js" id="MathJax-script" async></script>
+</head>
+<body>
+<div class="card">
+    <h1>∫ Symbolic Integrator</h1>
+    <div class="sub">enter mathematical expression in terms of x (sin, cos, exp, log, ^, sqrt ... )</div>
+    <label>Expression f(x) :</label>
+    <textarea id="exprInput" placeholder="e.g., x**2 + sin(x) + 1/x + exp(2*x)">x**2 + sin(x)</textarea>
+    <div style="margin-top: 10px">
+        <button id="integrateBtn">⚡ Compute Integral</button>
+    </div>
+    <div id="resultPanel" class="result-area" style="display: none;">
+        <div class="result-label">✅ indefinite integral  ∫ f(x) dx  = </div>
+        <div id="latexResult" class="latex-output"></div>
+        <div id="plainResult" style="font-family: monospace; font-size: 0.85rem; color: #2c3e66; margin-top: 10px;"></div>
+    </div>
+    <div id="errorPanel" class="result-area error" style="display: none;"></div>
+    <div class="footer">Powered by SymPy · FastAPI · Vercel  |  symbolic integration engine</div>
+</div>
+
+<script>
+    const btn = document.getElementById('integrateBtn');
+    const exprInput = document.getElementById('exprInput');
+    const resultPanel = document.getElementById('resultPanel');
+    const errorPanel = document.getElementById('errorPanel');
+    const latexResult = document.getElementById('latexResult');
+    const plainResult = document.getElementById('plainResult');
+
+    async function integrate() {
+        const expression = exprInput.value.trim();
+        if (!expression) {
+            showError('Please enter a valid expression.');
+            return;
+        }
+        btn.disabled = true;
+        btn.textContent = '⏳ Computing ...';
+        resultPanel.style.display = 'none';
+        errorPanel.style.display = 'none';
+
+        try {
+            const response = await fetch('/api/integrate', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ expression: expression, variable: 'x' })
+            });
+            const data = await response.json();
+            if (data.success) {
+                latexResult.innerHTML = `\\(\\displaystyle ${data.latex} + C\\)`;
+                plainResult.innerText = `= ${data.result} + C`;
+                resultPanel.style.display = 'block';
+                if (window.MathJax) MathJax.typesetPromise();
+            } else {
+                showError(data.error || 'Integration failed. Check syntax.');
+            }
+        } catch (err) {
+            showError('Network or server error: ' + err.message);
+        } finally {
+            btn.disabled = false;
+            btn.textContent = '⚡ Compute Integral';
+        }
+    }
+
+    function showError(msg) {
+        errorPanel.innerHTML = `<strong>⚠️ error</strong><br>${msg}`;
+        errorPanel.style.display = 'block';
+        resultPanel.style.display = 'none';
+    }
+
+    btn.addEventListener('click', integrate);
+    document.addEventListener('keypress', function(e) {
+        if (e.key === 'Enter' && (e.ctrlKey || e.metaKey)) integrate();
+    });
+</script>
+</body>
+</html>
