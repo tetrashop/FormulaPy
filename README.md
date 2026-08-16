@@ -71,3 +71,7 @@ MIT License
 <div align="center">
   <sub>ساخته شده با ❤️ توسط تیم TetraShop</sub>
 </div>
+
+## 🌐 دیپلوی
+
+- **URL:** [https://vercel.com/ramin-edjlal-s-projects/formula-py/4TN6sAq1DBRxLtaHE2TLCcHRhKUY](https://vercel.com/ramin-edjlal-s-projects/formula-py/4TN6sAq1DBRxLtaHE2TLCcHRhKUY)
