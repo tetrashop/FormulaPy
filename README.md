@@ -75,3 +75,4 @@ MIT License
 ## 🌐 دیپلوی
 
 - **URL:** [https://vercel.com/ramin-edjlal-s-projects/formula-py/4TN6sAq1DBRxLtaHE2TLCcHRhKUY](https://vercel.com/ramin-edjlal-s-projects/formula-py/4TN6sAq1DBRxLtaHE2TLCcHRhKUY)
+<!-- Trigger deploy: Mon Aug 17 01:47:44 +0330 2026 -->
